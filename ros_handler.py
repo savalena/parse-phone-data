@@ -50,10 +50,13 @@ class RosHandler(object):
     def create_ros_image(self, cv_image):
         gray = cv2.cvtColor(np.array(cv_image), cv2.COLOR_BGR2GRAY)
         image = self.bridge.cv2_to_imgmsg(gray, encoding=self.encoding)
-        self.image_message.header.stamp = self.timestamp
-        self.image_message.data = image
-        self.image_message.header.frame_id = 'mob_camera'
-        self.image_message.encoding = self.encoding
+        self.image_message = image
+        # self.image_message.header.stamp = self.timestamp
+        # self.image_message.data = image
+        # print(type(self.image_message.data))
+        # print(type(image))
+        # self.image_message.header.frame_id = 'mob_camera'
+        # self.image_message.encoding = self.encoding
 
     def set_timestamp(self):
         return rospy.get_rostime()
