@@ -4,9 +4,10 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import CameraInfo, Image, Imu
 import tf
 import numpy as np
+import cv2
 
 
-class RosHandler:
+class RosHandler(object):
     def __init__(self):
         self.encoding = "mono8"
         self.bridge = CvBridge()
@@ -47,10 +48,11 @@ class RosHandler:
         self.imu_msgs = imu
 
     def create_ros_image(self, cv_image):
-        image = self.bridge.cv2_to_imgmsg(cv_image, encoding=self.encoding)
+        gray = cv2.cvtColor(np.array(cv_image), cv2.COLOR_BGR2GRAY)
+        image = self.bridge.cv2_to_imgmsg(gray, encoding=self.encoding)
         self.image_message.header.stamp = self.timestamp
         self.image_message.data = image
-        self.image_message.frame_id = 'mob_camera'
+        self.image_message.header.frame_id = 'mob_camera'
         self.image_message.encoding = self.encoding
 
     def set_timestamp(self):

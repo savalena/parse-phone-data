@@ -3,32 +3,36 @@ import cv2
 import rospy
 from ros_handler import RosHandler
 import argparse
+import numpy as np
 
 
 # 'http://10.16.100.83:4747/video?640x480'
 class ImageIpCam(RosHandler):
-    def __init__(self, test, camera_ip='http://10.16.100.83:4747/video?640x480'):
-        super(RosHandler, self).__init__()
+    def __init__(self, test, camera_ip='http://10.16.100.21:4747/video?640x480'):
+        super(ImageIpCam, self).__init__()
         self.cap = cv2.VideoCapture(camera_ip)
-        if test:
-            print('******************CONNECTION WITH CAMERA TEST*********************')
-            self.test_connections()
-        else:
-            print('******************STARTING POST IMAGES IN ROS*********************')
-            self.get()
+        self.get()
 
     def get(self):
         while True:
-            _, frame = self.cap.read()
-            self.publish_image(frame)
+            ret, frame = self.cap.read()
+            if frame is not None:
+                self.publish_image(frame)
+            else:
+                rospy.logwarn("Image haven't arrived or camera is not connected")
+                rospy.sleep(1)
 
     def test_connections(self):
-        for i in range(100):
+        frame = []
+        while True:
+            rospy.sleep(1)
             ret, frame = self.cap.read()
-            cv2.imshow("Capturing", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
+            if frame != []:
+                cv2.imshow("Capturing", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    return
+            else:
+                rospy.logwarn("Image haven't arrived or camera is not connected")
         self.cap.release()
         cv2.destroyAllWindows()
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import asyncio
 import websockets
@@ -14,14 +14,14 @@ class ImuData(RosHandler):
         self.hostname = socket.gethostname()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ip = self.get_ip()
+        self.acceleration = []
+        self.gyroscope = []
+        self.orientation = []
         print("Your Computer Name is: " + self.hostname)
         print("Your Computer IP Address is: " + self.ip)
         print(
             "Enter {0}:5000 in the app [PhonePi] and select the sensors to stream. For PhonePi+ just enter {0}, without the port".format(
                 self.ip))
-        asyncio.get_event_loop().run_until_complete(
-            websockets.serve(self.echo, '0.0.0.0', 5000))
-        asyncio.get_event_loop().run_forever()
 
     def get_ip(self):
         try:
@@ -33,25 +33,6 @@ class ImuData(RosHandler):
         finally:
             self.socket.close()
         return IP
-
-    async def echo(self, websocket, path):
-        async for message in websocket:
-            if path == '//accelerometer':
-                data = await websocket.recv()
-                splitted = data.split(',')
-                self.acceleration = [float(x) for x in splitted]
-
-            if path == '//gyroscope':
-                data = await websocket.recv()
-                splitted = data.split(',')
-                self.gyroscope = [float(x) for x in splitted]
-
-            if path == '//orientation':
-                data = await websocket.recv()
-                splitted = data.split(',')
-                self.orientation = [float(x) for x in splitted]
-
-            self.publish_imu(self.acceleration, self.gyroscope, self.orientation)
 
 
 # hostname = socket.gethostname()
@@ -80,14 +61,35 @@ class ImuData(RosHandler):
 #             data = await websocket.recv()
 #             print(data)
 
+async def echo(websocket, path):
+    async for message in websocket:
+        if path == '//accelerometer':
+            data = await websocket.recv()
+            splitted = data.split(',')
+            imu.acceleration = [float(x) for x in splitted]
+
+        if path == '//gyroscope':
+            data = await websocket.recv()
+            splitted = data.split(',')
+            imu.gyroscope = [float(x) for x in splitted]
+
+        if path == '//orientation':
+            data = await websocket.recv()
+            splitted = data.split(',')
+            imu.orientation = [float(x) for x in splitted]
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test')
     parser.add_argument('--test', type=bool, help='Test camera connection ?', default=True)
     args = parser.parse_args()
-
     rospy.init_node('post_image_node', anonymous=True)
     try:
         imu = ImuData()
+        asyncio.get_event_loop().run_until_complete(
+            websockets.serve(echo, '0.0.0.0', 5000))
+        imu.publish_imu(imu.acceleration, imu.gyroscope, imu.orientation)
+        asyncio.get_event_loop().run_forever()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
