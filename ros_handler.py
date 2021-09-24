@@ -27,7 +27,7 @@ class RosHandler(object):
 
     def publish_imu(self, accelerator, gyroscope, orientation):
         self.create_ros_imu_message(accelerator, gyroscope, orientation)
-        self.image_publisher.publish(self.imu_msgs)
+        self.imu_publisher.publish(self.imu_msgs)
 
     def create_ros_imu_message(self, accelerator, gyroscope, orientation):
         orientation = self.degrees2rad(orientation)
