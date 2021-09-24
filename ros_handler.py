@@ -18,20 +18,28 @@ class RosHandler(object):
         self.image_publisher = rospy.Publisher('/camera/image_raw', Image, queue_size=1)
         self.imu_publisher = rospy.Publisher('/imu', Imu, queue_size=1)
 
+        self.acceleration = []
+        self.gyroscope = []
+        self.orientation = []
+
+        self.acc_upd = False
+        self.gyro_upd = False
+        self.orient_upd = False
+
     def publish_image(self, cv_image):
         self.create_ros_image(cv_image)
         self.image_publisher.publish(self.image_message)
 
-        # self.create_ros_camera_calib()
-        # self.image_calib_publisher()
-
-    def publish_imu(self, accelerator, gyroscope, orientation):
-        self.create_ros_imu_message(accelerator, gyroscope, orientation)
-        self.imu_publisher.publish(self.imu_msgs)
+    def publish_imu(self):
+        if self.acc_upd and self.gyro_upd and self.orient_upd:
+            self.create_ros_imu_message(self.acceleration, self.gyroscope, self.orientation)
+            self.imu_publisher.publish(self.imu_msgs)
+            self.reset_updates()
 
     def create_ros_imu_message(self, accelerator, gyroscope, orientation):
         orientation = self.degrees2rad(orientation)
-        q = tf.transformations.quaternion_from_euler(orientation[0], orientation[1], orientation[3])
+        print('orientation ', orientation)
+        q = tf.transformations.quaternion_from_euler(orientation[0], orientation[1], orientation[2])
         imu = Imu()
         imu.header.frame_id = 'imu'
         imu.header.stamp = self.set_timestamp()
@@ -60,6 +68,23 @@ class RosHandler(object):
 
     def set_timestamp(self):
         return rospy.get_rostime()
+
+    def update_acceleration(self, acc):
+        self.acceleration = acc
+        self.acc_upd = True
+
+    def update_gyroscope(self, gyro):
+        self.gyroscope = gyro
+        self.gyro_upd = True
+
+    def update_orientation(self, orientation):
+        self.orientation = orientation
+        self.orient_upd = True
+
+    def reset_updates(self):
+        self.acc_upd = False
+        self.gyro_upd = False
+        self.orient_upd = False
 
     @staticmethod
     def degrees2rad(orientation):
